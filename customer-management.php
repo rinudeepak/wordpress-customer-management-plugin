@@ -348,13 +348,7 @@ class CustomerManagementPlugin {
     ) $this->charset;");
   }
 
-  public function render_customer_list_shortcode() {
-    ob_start(); // Start output buffering
-    include(plugin_dir_path(__FILE__) . 'template/template-customer.php'); // Path to your template file
-    return ob_get_clean(); // Return the buffered content
-  }
-
-
+  
 
 }
 
