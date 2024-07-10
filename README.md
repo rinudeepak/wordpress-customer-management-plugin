@@ -41,11 +41,6 @@ Once the SQL dump file is imported, the `wp_customer` table will be created and 
 ## Usage
 1. Navigate to the 'Customer Management' menu in the WordPress admin dashboard.
 2. Use the provided forms to add, edit, delete, or view customer records.
-
-## Contributing
-1. Fork the repository.
-2. Create a new branch (`git checkout -b feature/YourFeature`).
-3. Commit your changes (`git commit -am 'Add some feature'`).
-4. Push to the branch (`git push origin feature/YourFeature`).
-5. Create a new Pull Request.
-
+3. To display a list of active customers on the front page of your website, use the [active_customers_ajax] shortcode.
+  
+ 
