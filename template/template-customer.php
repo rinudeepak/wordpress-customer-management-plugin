@@ -5,8 +5,8 @@ if (!defined('ABSPATH')) {
 
 // Fetch customers from the database.
 global $wpdb;
-$search = isset($_GET['s']) ? sanitize_text_field($_GET['s']) : '';
-$page = isset($_POST['paged']) ? absint($_POST['paged']) : 1; // Adjust to POST data for AJAX
+$search = isset($_GET['search']) ? sanitize_text_field($_GET['search']) : '';
+$page = isset($_GET['page']) ? absint($_GET['page']) : 1;
 $limit = 10;
 $offset = ($page - 1) * $limit;
 
@@ -18,14 +18,16 @@ if ($search) {
 $tablename = $wpdb->prefix . "customer";
 $results = $wpdb->get_results("SELECT * FROM $tablename $where LIMIT $limit OFFSET $offset");
 $total_customers = $wpdb->get_var("SELECT COUNT(*) FROM $tablename $where");
+// Fetch customers for the current page
+$customers = $wpdb->get_results("SELECT * FROM $tablename $where ORDER BY id DESC LIMIT $limit OFFSET $offset");
 
+echo '<div id="customer-list">';
 // Display the customers.
-if ($results) {
-  echo '<form method="get">';
-    echo '<input type="hidden" name="page" value="customer-management">';
-    echo '<input type="text" name="s" value="' . esc_attr($search) . '">';
-    echo '<input type="submit" value="Search" class="button">';
-    echo '</form>';
+if ($results) :
+  echo '<div id="customer-search-container">';
+  echo '<input type="text" id="customer-search" placeholder="Search customers...">';
+  echo '</div>';
+
   echo '<table class="customer-list-table">';
   echo '<thead><tr><th>ID</th><th>Name</th><th>Email</th><th>Phone</th><th>Date of Birth</th><th>Age</th><th>Gender</th><th>CR Number</th><th>Address</th><th>City</th><th>Country</th><th>Status</th></tr></thead>';
   echo '<tbody>';
@@ -50,23 +52,19 @@ if ($results) {
     echo '</tr>';
   }
   echo '</tbody></table>';
-  $total_pages = ceil($total_customers / $limit);
-  echo '<div class="tablenav"><div class="tablenav-pages">';
-  echo paginate_links(array(
-    'base' => '',
-    'format' => '?paged=%#%', // Adjust format for AJAX handling
-    'prev_text' => __('&laquo;'),
-    'next_text' => __('&raquo;'),
-    'total' => $total_pages,
-    'current' => $page,
-  ));
-  echo '</div></div>';
-} else {
-  echo '<p>No customers found.</p>';
-}
+    // Pagination
+    $total_pages = ceil($total_customers / $limit);
+    if ($total_pages > 1): 
+      echo '<div class="pagination">';
+        for ($i = 1; $i <= $total_pages; $i++): 
+          echo '<a href="#" class="page-link" data-page="'.$i.'">'.$i.'</a>';
+        endfor; 
+      echo '</div>';
+    endif; 
+  else: 
+    echo '<p>No customers found.</p>';
+  endif; 
 
-// If this is an AJAX request, exit after rendering the content
-if (isset($_POST['ajax']) && $_POST['ajax'] == 1) {
-  exit;
-}
+echo '</div>';
+
 ?>

@@ -1,37 +1,41 @@
 jQuery(document).ready(function($) {
-  $(document).on('click', '.tablenav-pages a.page-numbers', function(e) {
-      e.preventDefault();
-
-      var clickedLink = $(this);
-      var link = clickedLink.attr('href');
-      var page = clickedLink.text(); // Extract the page number from the link text
-
+    function loadCustomers(page, search) {
       $.ajax({
-          url: customerListAjax.ajax_url,
-          type: 'POST',
-          data: {
-              action: 'load_customers',
-              paged: page,
-              ajax: 1
-          },
-          beforeSend: function() {
-              // Add a loading indicator if needed
-          },
-          success: function(data) {
-              var newContent = $(data).find('.customer-list-table').html();
-              $('.customer-list-table').html(newContent);
-
-              // Update pagination links
-              var newPaginationLinks = $(data).find('.tablenav-pages').html();
-              $('.tablenav-pages').html(newPaginationLinks);
-          },
-          complete: function() {
-              // Highlight the clicked page link
-              clickedLink.addClass('active').siblings().removeClass('active');
-          },
-          error: function(xhr, status, error) {
-              console.error('AJAX Error:', status, error);
-          }
+        url: customer_ajax_object.ajax_url,
+        type: 'POST',
+        data: {
+          action: 'load_customers',
+          nonce: customer_ajax_object.nonce,
+          page: page,
+          search: search
+        },
+        beforeSend: function() {
+          $('#customer-list').addClass('loading');
+        },
+        success: function(response) {
+          $('#customer-list').removeClass('loading');
+          $('#customer-list').html(response.data.customers);
+          $('.pagination').replaceWith(response.data.pagination);
+        },
+        error: function() {
+          console.log('Error loading customers.');
+        }
       });
+    }
+  
+    // Handle pagination click
+    $('#customer-list').on('click', '.page-link', function(e) {
+      e.preventDefault();
+      var page = $(this).data('page');
+      var search = $('#customer-search').val();
+      loadCustomers(page, search);
+    });
+  
+    // Handle search input
+    $('#customer-search').on('keyup', function() {
+      var page = 1; // Reset to page 1 on search
+      var search = $(this).val();
+      loadCustomers(page, search);
+    });
   });
-});
+  

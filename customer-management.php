@@ -20,25 +20,94 @@ class CustomerManagementPlugin {
     add_action('admin_post_add_customer', array($this, 'addCustomer'));
     add_action('admin_post_edit_customer', array($this, 'editCustomer'));
     add_action('admin_post_delete_customer', array($this, 'deleteCustomer'));
+    add_shortcode('active_customers_ajax', array($this, 'render_active_customers_ajax_shortcode'));
     add_action('wp_enqueue_scripts', array($this, 'enqueue_scripts'));
-    add_action('wp_ajax_nopriv_load_customers', 'load_customers');
-    add_action('wp_ajax_load_customers', 'load_customers');
-    add_shortcode('customer_list_shortcode', array($this, 'render_customer_list_shortcode')); //you can use the [customer_list_shortcode] shortcode anywhere in your WordPress site 
+    add_action('wp_ajax_load_customers', array($this, 'load_customers_ajax'));
+    add_action('wp_ajax_nopriv_load_customers', array($this, 'load_customers_ajax')); // For non-logged-in users
     
   }
   public function enqueue_scripts() {
-    wp_enqueue_script('customer-list-ajax', plugins_url('/js/customer-list-ajax.js', __FILE__), array('jquery'), '1.0', true);
-wp_localize_script('customer-list-ajax', 'customerListAjax', array(
-      'ajaxurl' => admin_url('admin-ajax.php'),
-  ));
-  
-
+    wp_enqueue_script('customer-ajax-script', plugin_dir_url(__FILE__) . 'js/customer-list-ajax.js', array('jquery'), '1.0', true);
+    wp_localize_script('customer-ajax-script', 'customer_ajax_object', array(
+      'ajax_url' => admin_url('admin-ajax.php'),
+      'nonce' => wp_create_nonce('customer-ajax-nonce')
+    ));
   }
 
-  function load_customers() {
+  public function render_active_customers_ajax_shortcode() {
+    ob_start();
     include(plugin_dir_path(__FILE__) . 'template/template-customer.php');
-    wp_die(); // This is required to terminate immediately and return a proper response.
+    return ob_get_clean();
   }
+
+  public function load_customers_ajax() {
+    check_ajax_referer('customer-ajax-nonce', 'nonce');
+
+    global $wpdb;
+    $table_name = $wpdb->prefix . 'customer';
+    $page = isset($_POST['page']) ? absint($_POST['page']) : 1;
+    $limit = 10;
+    $offset = ($page - 1) * $limit;
+    $search = isset($_POST['search']) ? sanitize_text_field($_POST['search']) : '';
+
+    $where = "WHERE customer_status = 'active'";
+    if (!empty($search)) {
+      $where .= " AND (customer_name LIKE '%$search%' OR email LIKE '%$search%' OR phone_no LIKE '%$search%')";
+    }
+
+    $customers = $wpdb->get_results("SELECT * FROM $table_name $where ORDER BY id DESC LIMIT $limit OFFSET $offset");
+
+    $response = array(
+      'customers' => $this->render_customers_html($customers),
+      'pagination' => $this->get_pagination_html($page, $limit, $search),
+    );
+
+    wp_send_json_success($response);
+  }
+
+  private function render_customers_html($customers) {
+    ob_start();
+    if ($customers) {
+      echo '<table class="customer-table">';
+      echo '<thead><tr><th>Name</th><th>Email</th><th>Phone</th></tr></thead>';
+      echo '<tbody>';
+      foreach ($customers as $customer) {
+        echo '<tr>';
+        echo '<td>' . esc_html($customer->customer_name) . '</td>';
+        echo '<td>' . esc_html($customer->email) . '</td>';
+        echo '<td>' . esc_html($customer->phone_no) . '</td>';
+        echo '</tr>';
+      }
+      echo '</tbody></table>';
+    } else {
+      echo '<p>No customers found.</p>';
+    }
+    return ob_get_clean();
+  }
+
+  private function get_pagination_html($page, $limit, $search = '') {
+    global $wpdb;
+    $table_name = $wpdb->prefix . 'customer';
+
+    $where = "WHERE customer_status = 'active'";
+    if (!empty($search)) {
+      $where .= " AND (customer_name LIKE '%$search%' OR email LIKE '%$search%' OR phone_no LIKE '%$search%')";
+    }
+
+    $total_customers = $wpdb->get_var("SELECT COUNT(*) FROM $table_name $where");
+    $total_pages = ceil($total_customers / $limit);
+
+    ob_start();
+    if ($total_pages > 1) {
+      echo '<div class="pagination">';
+      for ($i = 1; $i <= $total_pages; $i++) {
+        echo '<a href="#" class="page-link" data-page="' . $i . '">' . $i . '</a>';
+      }
+      echo '</div>';
+    }
+    return ob_get_clean();
+  }
+
 
   function ourMenu() {
     add_menu_page('Customer Management', 'Customer Management', 'manage_options', 'customer-management', array($this, 'customerListPage'), 'dashicons-smiley', 100);
