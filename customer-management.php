@@ -15,17 +15,23 @@ class CustomerManagementPlugin {
     $this->charset = $wpdb->get_charset_collate();
     $this->tablename = $wpdb->prefix . "customer";
 
+    // Hooks to activate plugin and add menu
     add_action('activate_customer-management/customer-management.php', array($this, 'onActivate'));
     add_action('admin_menu', array($this, 'ourMenu'));
+    // Actions for handling form submissions
     add_action('admin_post_add_customer', array($this, 'addCustomer'));
     add_action('admin_post_edit_customer', array($this, 'editCustomer'));
     add_action('admin_post_delete_customer', array($this, 'deleteCustomer'));
+    // Shortcode for displaying active customers using AJAX
     add_shortcode('active_customers_ajax', array($this, 'render_active_customers_ajax_shortcode'));
+    // Enqueue script for AJAX functionality
     add_action('wp_enqueue_scripts', array($this, 'enqueue_scripts'));
+    // AJAX actions for loading customers
     add_action('wp_ajax_load_customers', array($this, 'load_customers_ajax'));
     add_action('wp_ajax_nopriv_load_customers', array($this, 'load_customers_ajax')); // For non-logged-in users
-    
   }
+
+  // Enqueue scripts for frontend AJAX functionality
   public function enqueue_scripts() {
     wp_enqueue_script('customer-ajax-script', plugin_dir_url(__FILE__) . 'js/customer-list-ajax.js', array('jquery'), '1.0', true);
     wp_localize_script('customer-ajax-script', 'customer_ajax_object', array(
@@ -34,12 +40,14 @@ class CustomerManagementPlugin {
     ));
   }
 
+  // Shortcode callback to render active customers using AJAX
   public function render_active_customers_ajax_shortcode() {
     ob_start();
     include(plugin_dir_path(__FILE__) . 'template/template-customer.php');
     return ob_get_clean();
   }
 
+  // AJAX callback to load customers based on search and pagination
   public function load_customers_ajax() {
     check_ajax_referer('customer-ajax-nonce', 'nonce');
 
@@ -65,6 +73,7 @@ class CustomerManagementPlugin {
     wp_send_json_success($response);
   }
 
+  // Private method to render HTML for customers
   private function render_customers_html($customers) {
     ob_start();
     if ($customers) {
@@ -94,6 +103,7 @@ class CustomerManagementPlugin {
     return ob_get_clean();
   }
 
+  // Private method to get HTML for pagination
   private function get_pagination_html($current_page, $total_customers, $limit, $search) {
     $total_pages = ceil($total_customers / $limit);
     ob_start();
@@ -108,8 +118,7 @@ class CustomerManagementPlugin {
     return ob_get_clean();
   }
 
-
-
+  // Method to add menu items in WordPress admin
   function ourMenu() {
     add_menu_page('Customer Management', 'Customer Management', 'manage_options', 'customer-management', array($this, 'customerListPage'), 'dashicons-smiley', 100);
     add_submenu_page('customer-management', 'Add New Customer', 'Add New Customer', 'manage_options', 'add-customer', array($this, 'addCustomerPage'));
@@ -117,6 +126,7 @@ class CustomerManagementPlugin {
   }
 
   
+  // Method to display customer list in WordPress admin
   function customerListPage() { 
     global $wpdb;
     $search = isset($_GET['s']) ? sanitize_text_field($_GET['s']) : '';
