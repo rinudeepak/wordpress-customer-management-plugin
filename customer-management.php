@@ -193,6 +193,7 @@ class CustomerManagementPlugin {
 
   }
 
+  // Method to display add new customer form in WordPress admin
   function addCustomerPage() {
     echo '<div class="wrap"><h1>Add New Customer</h1>';
     echo '<form action="' . admin_url('admin-post.php') . '" method="post">';
@@ -214,6 +215,7 @@ class CustomerManagementPlugin {
     echo '</form></div>';
   }
 
+  // Method to handle form submission for adding a new customer
   function addCustomer() {
     check_admin_referer('add_customer_nonce');
     global $wpdb;
@@ -269,6 +271,7 @@ class CustomerManagementPlugin {
 
   }
 
+  // Method to display edit customer form in WordPress admin
   function editCustomerPage() {
     global $wpdb;
     $id = isset($_GET['id']) ? absint($_GET['id']) : 0;
@@ -301,6 +304,7 @@ class CustomerManagementPlugin {
     echo '</form></div>';
   }
 
+  // Method to handle form submission for editing a customer
   function editCustomer() {
     check_admin_referer('edit_customer_nonce');
     global $wpdb;
@@ -323,6 +327,7 @@ class CustomerManagementPlugin {
     exit;
   }
 
+  // Method to handle form submission for deleting a customer
   function deleteCustomer() {
     if (current_user_can('administrator')) {
       $id = absint($_GET['id']);
@@ -338,6 +343,7 @@ class CustomerManagementPlugin {
 
 
 
+  // Method to create table on plugin activation
   function onActivate() {
     require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
     dbDelta("CREATE TABLE $this->tablename (
