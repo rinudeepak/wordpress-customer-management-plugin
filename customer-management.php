@@ -48,18 +48,18 @@ class CustomerManagementPlugin {
     $page = isset($_POST['page']) ? absint($_POST['page']) : 1;
     $limit = 10;
     $offset = ($page - 1) * $limit;
+    $total_customers = $wpdb->get_var("SELECT COUNT(*) FROM $table_name $where");
     $search = isset($_POST['search']) ? sanitize_text_field($_POST['search']) : '';
 
     $where = "WHERE customer_status = 'active'";
     if (!empty($search)) {
-      $where .= " AND (customer_name LIKE '%$search%' OR email LIKE '%$search%' OR phone_no LIKE '%$search%')";
+      $where .= " AND (customer_name LIKE '%$search%' OR email LIKE '%$search%' OR phone_no LIKE '%$search%' OR cr_no LIKE '%$search%' OR customer_status LIKE '%$search%')";
     }
 
-    $customers = $wpdb->get_results("SELECT * FROM $table_name $where ORDER BY id DESC LIMIT $limit OFFSET $offset");
-
+    $customers = $wpdb->get_results("SELECT * FROM $table_name $where ORDER BY id ASC LIMIT $limit OFFSET $offset");
     $response = array(
       'customers' => $this->render_customers_html($customers),
-      'pagination' => $this->get_pagination_html($page, $limit, $search),
+      'pagination' => $this->get_pagination_html($page, $total_customers, $limit, $search),
     );
 
     wp_send_json_success($response);
@@ -68,14 +68,23 @@ class CustomerManagementPlugin {
   private function render_customers_html($customers) {
     ob_start();
     if ($customers) {
-      echo '<table class="customer-table">';
-      echo '<thead><tr><th>Name</th><th>Email</th><th>Phone</th></tr></thead>';
+      echo '<table class="customer-list-table">';
+      echo '<thead><tr><th>ID</th><th>Name</th><th>Email</th><th>Phone</th><th>Date of Birth</th><th>Age</th><th>Gender</th><th>CR Number</th><th>Address</th><th>City</th><th>Country</th><th>Status</th></tr></thead>';
       echo '<tbody>';
       foreach ($customers as $customer) {
         echo '<tr>';
+        echo '<td>' . esc_html($customer->id) . '</td>';
         echo '<td>' . esc_html($customer->customer_name) . '</td>';
         echo '<td>' . esc_html($customer->email) . '</td>';
         echo '<td>' . esc_html($customer->phone_no) . '</td>';
+        echo '<td>' . esc_html($customer->dob) . '</td>';
+        echo '<td>' . esc_html($age) . '</td>';
+        echo '<td>' . esc_html($customer->gender) . '</td>';
+        echo '<td>' . esc_html($customer->cr_no) . '</td>';
+        echo '<td>' . esc_html($customer->customer_address) . '</td>';
+        echo '<td>' . esc_html($customer->city) . '</td>';
+        echo '<td>' . esc_html($customer->country) . '</td>';
+        echo '<td>' . esc_html($customer->customer_status) . '</td>';
         echo '</tr>';
       }
       echo '</tbody></table>';
@@ -85,28 +94,20 @@ class CustomerManagementPlugin {
     return ob_get_clean();
   }
 
-  private function get_pagination_html($page, $limit, $search = '') {
-    global $wpdb;
-    $table_name = $wpdb->prefix . 'customer';
-
-    $where = "WHERE customer_status = 'active'";
-    if (!empty($search)) {
-      $where .= " AND (customer_name LIKE '%$search%' OR email LIKE '%$search%' OR phone_no LIKE '%$search%')";
-    }
-
-    $total_customers = $wpdb->get_var("SELECT COUNT(*) FROM $table_name $where");
+  private function get_pagination_html($current_page, $total_customers, $limit, $search) {
     $total_pages = ceil($total_customers / $limit);
-
     ob_start();
     if ($total_pages > 1) {
       echo '<div class="pagination">';
       for ($i = 1; $i <= $total_pages; $i++) {
-        echo '<a href="#" class="page-link" data-page="' . $i . '">' . $i . '</a>';
+        $active_class = ($i == $current_page) ? 'active' : '';
+        echo '<a href="#" class="page-link ' . $active_class . '" data-page="' . $i . '" data-search="' . $search . '">' . $i . '</a>';
       }
       echo '</div>';
     }
     return ob_get_clean();
   }
+
 
 
   function ourMenu() {

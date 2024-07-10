@@ -7,6 +7,7 @@ if (!defined('ABSPATH')) {
 global $wpdb;
 $search = isset($_GET['search']) ? sanitize_text_field($_GET['search']) : '';
 $page = isset($_GET['page']) ? absint($_GET['page']) : 1;
+
 $limit = 10;
 $offset = ($page - 1) * $limit;
 
@@ -19,19 +20,19 @@ $tablename = $wpdb->prefix . "customer";
 $results = $wpdb->get_results("SELECT * FROM $tablename $where LIMIT $limit OFFSET $offset");
 $total_customers = $wpdb->get_var("SELECT COUNT(*) FROM $tablename $where");
 // Fetch customers for the current page
-$customers = $wpdb->get_results("SELECT * FROM $tablename $where ORDER BY id DESC LIMIT $limit OFFSET $offset");
+$customers = $wpdb->get_results("SELECT * FROM $tablename $where ORDER BY id ASC LIMIT $limit OFFSET $offset");
 
-echo '<div id="customer-list">';
 // Display the customers.
-if ($results) :
+if ($customers) :
   echo '<div id="customer-search-container">';
   echo '<input type="text" id="customer-search" placeholder="Search customers...">';
   echo '</div>';
-
+  echo '<div id="customer-list">';
+  echo '<div id="customer-table-list">';
   echo '<table class="customer-list-table">';
   echo '<thead><tr><th>ID</th><th>Name</th><th>Email</th><th>Phone</th><th>Date of Birth</th><th>Age</th><th>Gender</th><th>CR Number</th><th>Address</th><th>City</th><th>Country</th><th>Status</th></tr></thead>';
   echo '<tbody>';
-  foreach ($results as $row) {
+  foreach ($customers as $row) {
     $dob = new DateTime($row->dob);
     $now = new DateTime();
     $age = $dob->diff($now)->y;
@@ -52,6 +53,7 @@ if ($results) :
     echo '</tr>';
   }
   echo '</tbody></table>';
+  echo '</div>';
     // Pagination
     $total_pages = ceil($total_customers / $limit);
     if ($total_pages > 1): 
@@ -65,6 +67,6 @@ if ($results) :
     echo '<p>No customers found.</p>';
   endif; 
 
-echo '</div>';
+  echo '</div>';
 
 ?>
